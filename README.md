@@ -6,13 +6,10 @@ opencog | singnet
 ------- | -------
 [![CircleCI](https://circleci.com/gh/opencog/logicmoo_cogserver.svg?style=svg)](https://circleci.com/gh/opencog/logicmoo_cogserver) | [![CircleCI](https://circleci.com/gh/singnet/logicmoo_cogserver.svg?style=svg)](https://circleci.com/gh/singnet/logicmoo_cogserver)
 
-The Logicmoo Cogserver is a network scheme/prolog command-line
-and logicmoo server for the [OpenCog framework](https://opencog.org).
+The Logicmoo Cogserver is a network scheme/prolog command-line and logicmoo server for the [OpenCog framework](https://opencog.org).
 
-The code in this git repo allows an AtomSpace to communicate with
-other AtomSpaces by having them all connect to a common CogServer.
-The CogServer itself also provides an AtomSpace, which all clients
-interact with, in common.  In ASCII-art:
+The code in this git repo allows an AtomSpace to communicate with other AtomSpaces by having them all connect to a common CogServer.
+The CogServer itself also provides an AtomSpace, which all clients interact with, in common.  In ASCII-art:
 ```
  +-------------+
  |  CogServer  |
@@ -51,6 +48,21 @@ response-time, etc.  In ASCII-art:
                  +----------+   +-----------+
 ```
 
+Prerequisites
+-------------
+To run the logicmoo_cogserver, you need to install the SWI-Prolog first.
+logicmoo_clif, Logicmoo's Common Logic Interchange Format
+
+
+# Installation
+
+Using SWI-Prolog 7.1 or later:
+
+```prolog
+?- pack_install('https://github.com/logicmoo/logicmoo_cogserver.git').
+true.
+```
+
 
 Using
 -----
@@ -58,12 +70,21 @@ There are multiple ways to start the logicmoo_cogserver: from a bash shell promp
 (as a stand-alone process), from the guile command line, or from the
 prolog command line.
 
+
 * From bash, just start the process:
-  `$ ./prolog/logicmoo_cogserver.pl`
+```bash
+$ ./prolog/logicmoo_cogserver.pl`
+``` 
 
+* From prolog, load and start the process:
+```prolog
+?- use_module(library(logicmoo_cogserver)).
+true.
 
-* From prolog: `use_module(library(logicmoo_cogserver).` and then
-   `?- start_cogserver().` (where's the documentation for this?)
+?- start_cogserver().
+true.
+
+``` 
 
 Once started, one can obtain a shell by saying `rlwrap telnet localhost
 12101`, and then `pl` or `scm` to obtain a prolog or scheme shell.  This
@@ -76,41 +97,10 @@ Note that `telnet` does not provide any password protection!  It is
 fully networked, so you can telnet from other hosts. The default port
 number `21001` can be changed; see the documentation.
 
-Building and Running
---------------------
-
-To install the network of assertions, just follow the next sequence of
-commands in your SWI-Prolog shell:
-
-```bash
-	$ swipl
-	
-	?- pack_install('https://github.com/opencog/logicmoo_cogserver.git').
-	true.
-```
-
-OR 
-
-```bash
-	clone https://github.com/opencog/logicmoo_cogserver
-	cd logicmoo_cogserver
-	swipl
-	?- pack_install('.').
-	true.
-```
+- LOGICMOO Support Channel (Discord Invite Link)  https://discord.gg/JREW7F2
+- LOGICMOO Telegram at [https://t.me/LogicMoo](https://t.me/LogicMoo)
 
 
-Prerequisites
--------------
-To run the logicmoo_cogserver, you need to install the SWI-Prolog first.
-logicmoo_clif, Logicmoo's Common Logic Interchange Format
-
-Unit tests
-----------
-To build and run the unit tests, just say
-```
-    cd test
-```
 
 Architecture
 ------------
@@ -126,8 +116,11 @@ See also these README's:
 
 ## known issues
 
-- Only `scm` shell is supported for now. There are plans to extend this support to other offered shells in the future.
+- Not all of `scm` shell is supported for now. There are plans to extend this support to other offered shells in the future.
 - The logicmoo agent/logic system can be very hard to install and is optional from here
+- Document this pack!
+- Untangle the 'pack' install deps (Moving predicates over here from logicmoo_base)
+
 
 ## licensing information
 
