@@ -24,3 +24,4 @@
 
 :- module(cogserver_atomspace, []).
 
+:- reexport(library(opencog/atomese)).
