@@ -1,47 +1,18 @@
 
-LOGICMOO's AtomSpace Blackboard Server
+LOGICMOO's AtomSpace Blackboard Server (LABS)
 ===========================
 
 opencog | singnet
 ------- | -------
-xxxxxx  |  xxxxxx
+xxxxxxx  | xxxxxxx
 
-The LOGICMOO's AtomSpace Blackboard Server (LABS) is a CogServer Emulator that exposes a network scheme/prolog command-line the lets you run Logicmoo tools from inside the [OpenCog framework](https://opencog.org).
-
-The code in this git repo allows an AtomSpace to communicate with other AtomSpaces by having them all connect to a common CogServer.
-The LABS itself also provides an AtomSpace, which all clients interact with, in common.  
-
-In ASCII-art:
-```
- +-------------+
- |  LABS  |
- |    with     |  <-----internet------> Remote AtomSpace A
- |  AtomSpace  |  <---+
- +-------------+      |
-                      +-- internet ---> Remote AtomSpace B
-
-```
-
-Here, AtomSpace A can load/store Atoms (and Values) to LABS,
-as can AtomSpace B, and so these two can share AtomSpace contents
-however desired.
-
-This provides a simple, straight-forward backend for networking
-together multiple AtomSpaces so that they can share data. This
-backend, together with the file-based (RocksDB-based) backend
-at [atomspace-rocks](https://github.com/opencog/atomspace-rocks)
-is meant to provide a building-block out of which more complex
-distributed and/or decentralized AtomSpaces can be built.
-
-This really is decentralized: you can talk to multiple servers at once.
-There is no particular limit, other than that of bandwidth,
-response-time, etc. 
+The LOGICMOO's AtomSpace Blackboard Server (LABS) is a CogServer Emulator that exposes a network scheme/prolog command-line the lets you run Logicmoo tools from inside the [OpenCog framework](https://opencog.org).  This provides a simple, straight-forward backend for networking together multiple AtomSpaces with Logicmoo so that they can share data. There is no particular limit, other than that of bandwidth, response-time, etc. 
 
  In ASCII-art:
 
 ```
  +-----------+
- |           |  <---internet--> My_LABS
+ |           |  <---internet-->  *LABS*
  |  Server A |                      ^  ^
  |           |        +-------------+  |
  +-----------+        v                v
@@ -68,6 +39,7 @@ Logicmoo's Common Logic Interchange Format logicmoo_clif
 ?- pack_install('https://github.com/logicmoo/logicmoo_clif.git').
 true.
 ```
+
 
 # Installation
 
@@ -205,7 +177,7 @@ Additional shells (i.e. shells for things other than Prolog or scheme) can be im
 
 Please refer to the  [OpenCog shell](https://wiki.opencog.org/w/OpenCog_shell "OpenCog shell")  page for general info about how to start the CogServer, and how to connect to the telnet shell, and thence the Prolog or scheme shells. The same menu also provides the  sexpr  shell, descried below.
 
-## High-performance Atomese serving
+## Atomese serving
 
 This section reviews the so-called  sexpr  shell: this shell handles a small handful of special commands that generally take  [Atomese](https://wiki.opencog.org/w/Atomese "Atomese")  s-expressions as arguments. A few also take  #t  and  #f  as booleans, emulating the scheme API for these same functions.
 
