@@ -143,8 +143,8 @@ Note that if you are a clever programmer who understands TCP/IP sockets, then yo
 
 ## Example
 
-Below is an example of loading an atom from RocksDB, and then sending it to two other CogServers. It is written in  [scheme](https://wiki.opencog.org/w/Scheme "Scheme"); you can do the same thing in  [python](https://wiki.opencog.org/w/Python "Python").
-
+Below is an example of loading an atom from RocksDB, and then sending it to two other CogServers. It is written in  [scheme](https://wiki.opencog.org/w/Scheme "Scheme"); you can do the same thing in  [PROLOG](https://wiki.opencog.org/w/prolog "prolog").
+```
 ; Open connections
 (define csna (CogStorageNode "cog://192.168.1.1"))
 (define csnb (CogStorageNode "cog://192.168.1.2"))
@@ -178,7 +178,7 @@ Below is an example of loading an atom from RocksDB, and then sending it to two 
 (cog-close csna)
 (cog-close csnb)
 (cog-close rsn)
-
+```
 A detailed, working version of the above can be found in github, in the  [AtomSpace persistence demo](https://github.com/opencog/atomspace/blob/master/examples/atomspace/persistence.scm)  and the  [persist-multi demo](https://github.com/opencog/atomspace/blob/master/examples/atomspace/persist-multi.scm). See also the other examples in the same directory.
 
 Additional detailed, working examples can be found in the assorted github repos:
@@ -190,7 +190,7 @@ Additional detailed, working examples can be found in the assorted github repos:
 
 There are fifteen functions for working with storage or a remote AtomSpace. These include opening and closing a connecting, sending and receiving individual Atoms, sending receiving them in bulk, and performing precise, selective queries to get only those Atoms you want.
 
-The names given below are the  [scheme](https://wiki.opencog.org/w/Scheme "Scheme")  names for these functions; the equivalent C++ and  [python](https://wiki.opencog.org/w/Python "Python")  names are almost the same, using an underscore instead of a dash.
+The names given below are the  [scheme](https://wiki.opencog.org/w/Scheme "Scheme")  names for these functions; the equivalent C++ and  [PROLOG](https://wiki.opencog.org/w/prolog "prolog")  names are almost the same, using an underscore instead of a dash.
 
 The methods are:
 
@@ -210,7 +210,7 @@ The methods are:
 -   `fetch-query`  -- run the indicated query on the remote server/storage, and get all of the results of that query. You can use  [BindLink](https://wiki.opencog.org/w/BindLink "BindLink"),  [GetLink](https://wiki.opencog.org/w/GetLink "GetLink"),  [QueryLink](https://wiki.opencog.org/w/QueryLink "QueryLink"),  [MeetLink](https://wiki.opencog.org/w/MeetLink "MeetLink")  and  [JoinLink](https://wiki.opencog.org/w/JoinLink "JoinLink")  to formulate queries. Note that the query has a built-in caching mechanism, so that calling  `fetch-query`  a second time may return the same cached query results. That cache can be explicitly cleared, so that a second call re-runs the query. This is handy when queries are large and complex and consume lots of CPU time. There is an experimental time-stamp mechanism on the cache.
 -   `barrier`  -- Force all prior network or storage operations to complete (on this particular StorageNode) before continuing with later operations.
 
-Detailed and precise documentation can be displayed at the scheme and python command prompts. For example, typing  `,describe fetch-atom`  at the guile prompt will provide the man page for that function (note the comma in front of the "describe". You can shorten it to  `,d`). Something similar gets you the  [python](https://wiki.opencog.org/w/Python "Python")  documentation.
+Detailed and precise documentation can be displayed at the scheme and PROLOG command prompts. For example, typing  `,describe fetch-atom`  at the guile prompt will provide the man page for that function (note the comma in front of the "describe". You can shorten it to  `,d`). Something similar gets you the  [PROLOG](https://wiki.opencog.org/w/prolog "prolog")  documentation.
 
 All of the above functions are provisional: they have been working and supported for quite a long time, but they should probably be replaced by pure  [Atomese](https://wiki.opencog.org/w/Atomese "Atomese"). That is, there should probably be a  `FetchAtomLink`  so that running  `([cog-execute!](https://wiki.opencog.org/w/Cog-execute! "Cog-execute!")  (FetchAtomLink ...))`  does exactly the same thing as calling  `fetch-atom`. This would be super-easy to do; it hasn't been done, because no one has asked for it yet.
 
@@ -218,6 +218,128 @@ The above API is implemented here:  [opencog/persist/api](https://github.com/ope
 
 ## Creating new implementations
 
-The  [CogSimpleStorageNode](https://wiki.opencog.org/w/CogSimpleStorageNode "CogSimpleStorageNode")  provides the simplest possible (more or less) working implementation of a StorageNode. It can be used as a guideline or example template, when creating new types of StorageNodes. To do this, simply copy the code located here:  [https://github.com/opencog/atomspace-cog/opencog/persist/cog-simple](https://github.com/opencog/atomspace-cog/opencog/persist/cog-simple)  and rename the files, gut the contents and replace them with what you need. Everything else, including the above-described API will work automatically. You will also need to add a new atom type to this file:  [opencog/persist/storage/storage_types.script](https://github.com/opencog/atomspace/tree/master/opencog/persist/storage/storage_types.script).
 
-If you are designing a new interface to some database system, then it is strongly suggested that the code for the RocksStorageNode be copied and modified. Do  _**NOT**_  use the PostgresStorageNode as an example, even if you are contemplating another SQL database. The code written for PostgresStorageNode is very old, and is deeply flawed in many ways
+The  **CogServer**  is a network server for the  [AtomSpace](https://wiki.opencog.org/w/AtomSpace "AtomSpace"). It provides three different services, tied fairly closely together. These are a telnet server to an OpenCog command line, a telnet server to  [scheme](https://wiki.opencog.org/w/Scheme "Scheme")  and  [PROLOG](https://wiki.opencog.org/w/prolog "prolog")  command lines, (which can be used at the same time, for the same AtomSpace!) and a high-performance  [Atomese](https://wiki.opencog.org/w/Atomese "Atomese")  network server. It is straight-forward to extend the CogServer with network services of this kind.
+
+Most of this wiki page will be devoted to describing the high-performance network server. It is fairly important to understand, as it provides a basic building block for building a  [distributed, decentralized AtomSpace](https://wiki.opencog.org/w/Distributed_AtomSpace "Distributed AtomSpace"). It provides the basic peer-to-peer networking layer, by means of the  [CogStorageNode](https://wiki.opencog.org/w/CogStorageNode "CogStorageNode").
+
+Some comments about network serving in general, including other systems, such as RESTful API's, are given at the bottom of this page.
+
+## Contents
+
+-   [1  Overview](https://wiki.opencog.org/w/CogServer#Overview)
+-   [2  Implementation](https://wiki.opencog.org/w/CogServer#Implementation)
+-   [3  Using the CogServer](https://wiki.opencog.org/w/CogServer#Using_the_CogServer)
+-   [4  High-performance Atomese serving](https://wiki.opencog.org/w/CogServer#High-performance_Atomese_serving)
+    -   [4.1  Atomese and S-Expressions](https://wiki.opencog.org/w/CogServer#Atomese_and_S-Expressions)
+    -   [4.2  The sexpr shell](https://wiki.opencog.org/w/CogServer#The_sexpr_shell)
+    -   [4.3  The sexpr commands](https://wiki.opencog.org/w/CogServer#The_sexpr_commands)
+    -   [4.4  sexpr usage examples](https://wiki.opencog.org/w/CogServer#sexpr_usage_examples)
+    -   [4.5  The sexpr implementation](https://wiki.opencog.org/w/CogServer#The_sexpr_implementation)
+-   [5  Other systems](https://wiki.opencog.org/w/CogServer#Other_systems)
+    -   [5.1  Network serving ruminations](https://wiki.opencog.org/w/CogServer#Network_serving_ruminations)
+
+## Overview
+
+The components are:
+
+-   A telnet server providing access to a command-line shell. A plugin system allows new commands to be added in a pluggable manner. This shell is mostly unused at this time; it does offer a command-line interface to the  [AgentServer](https://wiki.opencog.org/w/AgentServer "AgentServer").
+
+-   A telnet server providing multi-user access to a  [scheme](https://wiki.opencog.org/w/Scheme "Scheme")  REPL shell, and a  [PROLOG](https://wiki.opencog.org/w/prolog "prolog")  REPL shell. (REPL stands for "Read Evaluate Print Loop"). These shells are very useful for starting, stopping and managing long-running AtomSpace jobs. For example, one terminal can be used to start a big job, while a second terminal can be used to monitor its progress. Both the scheme and the PROLOG shells can be used  _at the same time_, so that, for example, an  [Atom](https://wiki.opencog.org/w/Atom "Atom")  created with prolog is instantly visible to scheme, and vice-versa. This is particularly useful when interfacing to  [ROS (Robot Operating System)](http://www.ros.org/), which is primarily developed in PROLOG. The scheme shell is particularly efficient for moving Atoms across the network.
+
+-   A high-speed  [Atomese](https://wiki.opencog.org/w/Atomese "Atomese")  server. This is a small subset of the scheme shell, but very highly tuned for maximum performance for moving around Atoms on the network. We believe that it is (very nearly) impossible to beat the performance of this component, using any other technology, including ZeroMQ, RESTful API's, Protocol Buffers, JSON servers, and so on. The reason for this is that Atomese is easy to decode, as it has a regular structure: it can be done with string compares. Running Atomese is also extremely fast: it runs at the speed of C++ constructors. There is very little overhead, almost nothing to trim.
+
+The high-speed Atomese server has been used to implement the  [CogStorageNode](https://wiki.opencog.org/w/CogStorageNode "CogStorageNode"), which uses the CogServer to move Atoms around on the network, point-to-point, from within the AtomSpace. A conventional Atomspace job can use the CogStorageNode to easily fetch, send and query Atoms (the full query mechanism--  [BindLink](https://wiki.opencog.org/w/BindLink "BindLink")  and friends, are supported. Basically, you can run BindLink over the network.) The protocol for accomplishing this is documented below.
+
+The  [CogStorageNode](https://wiki.opencog.org/w/CogStorageNode "CogStorageNode")  can in turn be used as a building block to build a  [distributed, decentralized AtomSpace](https://wiki.opencog.org/w/Distributed_AtomSpace "Distributed AtomSpace"). It provides the basic peer-to-peer communications layer.
+
+## Implementation
+
+The source code for the CogServer can be found in the git repo here:  [https://github.com/opencog/cogserver](https://github.com/opencog/cogserver)
+
+Additional shells (i.e. shells for things other than PROLOG or scheme) can be implemented by modelling existing code in this directory:  [https://github.com/opencog/cogserver/opencog/cogserver/shell](https://github.com/opencog/cogserver/opencog/cogserver/shell)
+
+## Using the CogServer
+
+Please refer to the  [OpenCog shell](https://wiki.opencog.org/w/OpenCog_shell "OpenCog shell")  page for general info about how to start the CogServer, and how to connect to the telnet shell, and thence the PROLOG or scheme shells. The same menu also provides the  sexpr  shell, descried below.
+
+## High-performance Atomese serving
+
+This section reviews the so-called  sexpr  shell: this shell handles a small handful of special commands that generally take  [Atomese](https://wiki.opencog.org/w/Atomese "Atomese")  s-expressions as arguments. A few also take  #t  and  #f  as booleans, emulating the scheme API for these same functions.
+
+#### Atomese and S-Expressions
+
+[Atomese](https://wiki.opencog.org/w/Atomese "Atomese")  is a simple language for writing down  [Atoms](https://wiki.opencog.org/w/Atom "Atom")  as  [s-expressions](https://en.wikipedia.org/wiki/S-expression). An s-expression is achieved with nested parenthesis. Most examples on this wiki are written this way: for example
+
+([EvaluationLink](https://wiki.opencog.org/w/EvaluationLink "EvaluationLink") ([PredicateNode](https://wiki.opencog.org/w/PredicateNode "PredicateNode") "enjoys")
+     ([ListLink](https://wiki.opencog.org/w/ListLink "ListLink") ([Concept](https://wiki.opencog.org/w/Concept "Concept") "Linas") (Concept "being outdoors")))
+
+Such expressions can be parsed easily enough by performing string searches. Parsing such expressions is not quite as fast as some binary format, but they are eminently human-readable, making them quite nice for general code development, ad hoc usage, debugging. They are easy to print. Most importantly, they can be processed on the server side with relative ease. They can certainly be process much faster than what the guile shell could ever go, or what an equivalent PROLOG shell could do.
+
+#### The  sexpr  shell
+
+The  sexpr  can be accessed via telnet, for a manual session, or directly via TCP/IP sockets, for programmatic use. In both cases, the access method is exactly the same: connect to the desired hostname (tcpip address) and port number 17001. (This port number is dynamically configurable, at the time that the CogServer is started.) Enter the  sexpr  shell by sending the ascii (utf-8) string "sexpr\n" (without the quotes; the \n is the newline character.) After sending this string, the socket will be in  sexpr  mode. Nothing will be sent back, unless one of the  sexpr  commands generates output. The  sexpr  can be gracefully exited by sending a control-D (hex 0x04) or a single '.' on a line by itself (that is, a period (0x2E) followed by a newline (0x0A).
+
+#### The  sexpr  commands
+
+The following commands are available. They behave more-or-less exactly the same as their ordinary scheme counterparts. Therefore, using the  ,describe  command at the guile prompt will provide documentation.
+
+-   cog-atomspace-clear
+-   cog-execute-cache!
+-   cog-extract!
+-   cog-extract-recursive!
+-   cog-get-atoms
+-   cog-incoming-by-type
+-   cog-incoming-set
+-   cog-keys->alist
+-   cog-link
+-   cog-node
+-   cog-set-value!
+-   cog-set-values!
+-   cog-set-tv!
+-   cog-value
+
+Again, many of these commands are relatively silent; they will not return any bytes, if they don't need to. Syntax errors can be discovered by doing  tail -f /tmp/cogserver.log.
+
+At this time, these are the only supported commends.
+
+#### sexpr  usage examples
+
+To transmit a single Atom to the cogserver, use the  cog-set-tv!  command. For example:
+
+`(cog-set-tv! (ConceptNode "foo") (SimpleTruthValue 0.3 0.6))`
+
+To list the Atoms in the AtomSpace:
+
+`(cog-get-atoms 'Atom #t)`
+
+To list only the ConceptNodes:
+
+`(cog-get-atoms 'ConceptNode #t)`
+
+More complex data transfers can be accomplished by combining these primitives.
+
+Please note that the  cog-execute-cache!  command is rather dangerous: it will execute any executable Atom. The result of execution is cached at the provided key; this result can be fetched by using  cog-value  with the same atom and key.
+
+#### The  sexpr  implementation
+
+The implementation of these commands is  _not_  in the CogServer, but in the base Atomsapce git repo. The actual decoding can be found here:  [opencog/persist/sexpr/Commands.cc](https://github.com/opencog/atomspace/tree/master/opencog/persist/sexpr/Commands.cc). That is, the  sexpr  shell is just a network shell. The cogserver hands off the actuall shell processing to the shell implementation, which, in this case, is in  [opencog/persist/sexpr](https://github.com/opencog/atomspace/tree/master/opencog/persist/sexpr).
+
+Note what this implies: if you want to create an even faster, niftier, more feature-rich, super-duper network protocol for the AtomSpace, you just have to coPROLOG these files, and change things around as you wish.
+
+## Other systems
+
+One can get network shell access in other ways besides the CogServer. For example, guile offers the `(system repl server)` module, documented  [here, in the guile documentation](https://www.gnu.org/software/guile/manual/html_node/REPL-Servers.html). Our experience is that it is both slow, and crashy. It is more than ten times slower that the CogServer-provided REPL shell, which might not matter much for typing, but it hurts when sending a lot of data. (Note that the Atomese shell is yet another order of magnitude faster than the Cogserver guile shell.) Much much worse, the guile network shell is prone to crashes and hangs. This is infrequent: maybe once every few hours, but is completely deadly for long-running jobs.
+
+Presumably, there are PROLOG network servers as well. We don't know of any and haven't tried them.
+
+### Network serving ruminations
+
+One might hope that there exists some off-the-shelf, general-purpose, multi-featured network server. Surprisingly, there does not seem any such (after a brief search; did I miss it?) A generic network server might be expected to provide:
+
+-   Authentication, using login credentials of some sort, or possibly via capabilities.
+-   Encrypted messaging.
+-   A command dispatcher, with per-command authentication.
+
+From what I can tell, people *do* build these kinds of systems, but they are all web-based. A typical example might be  [PROLOG flask](https://flask.palletsprojects.com/), which is a micro webserver. It provides basic networking. On top of this, there are dozens and dozens of modules providing various services for flask. Sounds great, except this is all layered on top of the HTTP/1.1 protocol. Which is fine, if you are transferring huge things around, like webpages. However, Atoms are tiny: just hundreds of bytes (or less!) -- they are smaller, and sometimes  _much smaller_  than the HTTP headers. The CPU overhead of processing HTTP headers is a zillion times larger, longer, heavier, than the CPU time spent processing an Atom. The overhead of processing an HTTP header, (needed for a RESTful interface) becomes not just a bottleneck, it becomes a boat-anchor that is larger than the boat.The  **CogServer**  is a network server for the  [AtomSpace](https://wiki.opencog.org/w/AtomSpace "AtomSpace"). It provides three different services, tied fairly closely together. These are a telnet server to an OpenCog command line, a telnet server to  [scheme](https://wiki.opencog.org/w/Scheme "Scheme")  and  [PROLOG](https://wiki.opencog.org/w/prolog "prolog")  command lines, (which can be used at the same time, for the same AtomSpace!) and a high-performance  [Atomese](https://wiki.opencog.org/w/Atomese "Atomese")  network server. It is straight-forward to extend the CogServer with network services of this kind.
+
