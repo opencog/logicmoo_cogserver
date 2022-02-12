@@ -131,25 +131,11 @@ e  **StorageNode**  is a  [Node](https://wiki.opencog.org/w/Node "Node")  that p
 
 Existing implementations include:
 
--   [RocksStorageNode](https://wiki.opencog.org/w/RocksStorageNode "RocksStorageNode")  -- Works with  [RocksDB](https://rocksdb.org/)  to save/restore AtomSpace data to the local filesystem.
--   [PostgresStorageNode](https://wiki.opencog.org/w/PostgresStorageNode "PostgresStorageNode")  -- Works with  [PostgreSQL](https://www.postgresql.org/)  to save/restore AtomSpace data to an SQL server.
 -   [CogStorageNode](https://wiki.opencog.org/w/CogStorageNode "CogStorageNode")  -- Exchange atoms with another AtomSpace on the network, using the  [CogServer](https://wiki.opencog.org/w/CogServer "CogServer")  for communications.
--   [CogSimpleStorageNode](https://wiki.opencog.org/w/CogSimpleStorageNode "CogSimpleStorageNode")  -- Same as above, but provides a very simple, easy-to-understand example implementation. It can be used as a template for creating new types of StorageNodes.
--   [FileStorageNode](https://wiki.opencog.org/w/FileStorageNode "FileStorageNode")  -- Read/write plain-UTF8 (plain-ASCII) s-expressions to a flat file. This supports only a subset of the API suitable for flat files, so no search or query. Ideal for dumping and loading AtomSpaces as plain text.
-
+-   [CogSimpleStorageNode](https://wiki.opencog.org/w/CogSimpleStorageNode "CogSimpleStorageNode")  -- Same as above, but provides a very simple, easy-to-understand example 
 All of these types use exactly the same API, described below.
 
 Note that the StorageNode is a "private" (aka "abstract" or "pure virtual") type: it cannot be used, by itself; only the above subtypes can be directly created and used.
-
-#### Flat file API
-
-The flat-file API is designed to be high-performance and compact. It only supports a subset of the API below: one can write individual atoms, or dump the entire AtomSpace. It can load a complete file (all of it; subsections cannot be selected). There is no ability to search or query.
-
-The main benefit of the flat-file API is that it is literally 10x faster than dumping atoms by hand to a file. Yes, we measured. Yes, the flat-file API has been performance tuned to go pretty much as fast as possible.
-
-It is also ideal for backing up and archiving large AtomSpaces. When an Atom is stored as a plain-text s-expression, it is typically 50 to 250 bytes in size. When compressed (using bzip2) an Atom is 4 to 10 bytes in size. Thus even huge AtomSpaces have only modest sizes when dumped and compressed. Note that this is a lot smaller than the on-disk format for RocksDB: this is because RocksStorageNode maintains indexes to enable searching and queries. Those indexes take up a lot of storage! This is also about 1.3x to 4x smaller than dumping a Postgres database (of an AtomSpace) and compressing it. This is because the representation of an Atom in SQL is relatively complex.
-
-See  [opencog/persist/sexpr](https://github.com/opencog/atomspace/tree/master/opencog/persist/sexpr)  for the implementation, and  [examples/atomspace/persist-store.scm](https://github.com/opencog/atomspace/tree/master/examples/atomspace/persist-store.scm)  for demo code.
 
 ##### Socket API
 
