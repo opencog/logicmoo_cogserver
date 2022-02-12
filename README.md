@@ -4,7 +4,7 @@ AtomSpace CogStorage Server to LOGICMOO's Blackboard
 
 opencog | singnet
 ------- | -------
-[![CircleCI](https://circleci.com/gh/opencog/logicmoo_cogserver.svg?style=svg)](https://circleci.com/gh/opencog/logicmoo_cogserver) | [![CircleCI](https://circleci.com/gh/singnet/logicmoo_cogserver.svg?style=svg)](https://circleci.com/gh/singnet/logicmoo_cogserver)
+xxxxxx  |  xxxxxx
 
 The Logicmoo Cogserver is a network scheme/prolog command-line and logicmoo server for the [OpenCog framework](https://opencog.org).
 
