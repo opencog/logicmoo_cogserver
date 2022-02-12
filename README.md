@@ -1,5 +1,4 @@
-
-AtomSpace CogStorage Server to LOGICMOO's Blackboard
+LOGICMOO's AtomSpace Blackboard Server
 ===========================
 
 opencog | singnet
