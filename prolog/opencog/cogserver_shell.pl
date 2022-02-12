@@ -27,6 +27,8 @@
 
 :- reexport(library(opencog/atomspace)).
 
+:- ensure_loaded(library(logicmoo_cogserver)).
+
 start_cogserver(Call,Port,Description):- PortNum is Port,
   must(prolog_cogserver(PortNum, [allow(_),call(Call),description(Description)])),!.
 
@@ -56,13 +58,13 @@ peer_to_host(Peer,Host):- atom(Peer),Peer=Host,!.
 peer_to_host(Peer,Host):- compound(Peer),catch((Peer=..PeerL,atomic_list_concat(PeerL,'.',Host)),_,fail),!.
 peer_to_host(Peer,Host):- term_to_atom(Peer,Host),!.
 
-set_stream_carlessly(X,Y):- carlessly(set_stream(X,Y)).
+set_stream_carelessly(X,Y):- carelessly(set_stream(X,Y)).
 
 cogserver_loop(ServerSocket, Options) :-
     tcp_accept(ServerSocket, PeerSock, Peer),
     tcp_open_socket(PeerSock, In, Out),
-    set_stream_carlessly(In, close_on_abort(false)),
-    set_stream_carlessly(Out, close_on_abort(false)),
+    set_stream_carelessly(In, close_on_abort(false)),
+    set_stream_carelessly(Out, close_on_abort(false)),
     peer_to_host(Peer,Host),
     gensym(inst_,Num),
     option(alias(ServerAlias),Options,prolog_cogserver),
@@ -88,28 +90,26 @@ service_cogshell_peer(Host,Alias,PeerSock,In,Out,Peer,Options) :-
     thread_self(Id),
     set_prolog_flag(tty_control, true),
     set_prolog_IO(In, Out, Out),    
-    set_stream_carlessly_carlessly(In, tty(true)),
+    %set_stream_carelessly(user_input, tty(true)),
     % TODO figure out how to get immedate results
-    % set_stream_carlessly(In, buffer_size(1)),
-    set_stream_carlessly(user_output, tty(true)),
-    set_stream_carlessly(user_error, tty(true)),
-    set_stream_carlessly(In, close_on_abort(false)),
-    set_stream_carlessly(Out, close_on_abort(false)),
-    set_stream_carlessly(In, close_on_except(true)),
-    set_stream_carlessly(Out, close_on_except(true)),
+    % set_stream_carelessly(In, buffer_size(1)),
+    set_stream_carelessly(user_output, tty(true)),
+    set_stream_carelessly(user_error, tty(true)),
+    set_stream_carelessly(user_input, close_on_abort(false)),
+    set_stream_carelessly(user_output, close_on_abort(false)),
+    set_stream_carelessly(user_input, close_on_except(true)),
+    set_stream_carelessly(user_output, close_on_except(true)),
     set_thread_error_stream(Id,user_error),
     current_prolog_flag(encoding, Enc),
-    set_stream_carlessly(user_input, encoding(Enc)),
-    set_stream_carlessly(user_output, encoding(Enc)),
-    set_stream_carlessly(user_error, encoding(Enc)),
-    set_stream_carlessly(user_input, newline(detect)),
-    set_stream_carlessly(user_output, newline(dos)),
-    set_stream_carlessly(user_error, newline(dos)),
-
+    set_stream_carelessly(user_input, encoding(Enc)),
+    set_stream_carelessly(user_output, encoding(Enc)),
+    set_stream_carelessly(user_error, encoding(Enc)),
+    set_stream_carelessly(user_input, newline(detect)),
+    set_stream_carelessly(user_output, newline(dos)),
+    set_stream_carelessly(user_error, newline(dos)),
     call(retractall,thread_util:has_console(Id, _, _, _)),
     thread_at_exit(call(retractall,thread_util:has_console(Id, _, _, _))),
     call(asserta,thread_util:has_console(Id, In, Out, Out)),
-
     option(call(Call), Options, prolog),
     format(Main_error,'~N~n~q~n~n',[service_cogshell_peer_call(Call,Id,Alias,PeerSock,In,Out,Host,Peer,Options)]),
     format(user_error,
@@ -166,8 +166,9 @@ run_cogshell:-
   writeln(';; LABS development version dropping you to prolog/0 shell'),
   prolog.
 
-start_cogserver:- 
-   start_cogserver(21001),!.
+start_cogserver:-
+   Port is 17001+4000,
+   start_cogserver(Port),!.
 
 start_cogserver_main:- start_cogserver, prolog.
 
