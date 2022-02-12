@@ -1,13 +1,8 @@
 # logicmoo_cogserver
 
-OpenCog logicmoo_cogserver
 =================
 
-opencog | singnet
-------- | -------
-[![CircleCI](https://circleci.com/gh/opencog/logicmoo_cogserver.svg?style=svg)](https://circleci.com/gh/opencog/logicmoo_cogserver) | [![CircleCI](https://circleci.com/gh/singnet/logicmoo_cogserver.svg?style=svg)](https://circleci.com/gh/singnet/logicmoo_cogserver)
-
-The OpenCog Logicmoo Cogserver is a network scheme/prolog command-line
+The Logicmoo CogServer is a network scheme/prolog command-line
 and logicmoo server for the [OpenCog framework](https://opencog.org).
 
 Overview
