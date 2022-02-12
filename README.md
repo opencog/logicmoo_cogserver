@@ -1,44 +1,56 @@
-# logicmoo_cogserver
 
-=================
+AtomSpace CogStorage Server to LOGICMOO's Blackboard
+===========================
 
-The Logicmoo CogServer is a network scheme/prolog command-line
+opencog | singnet
+------- | -------
+[![CircleCI](https://circleci.com/gh/opencog/logicmoo_cogserver.svg?style=svg)](https://circleci.com/gh/opencog/logicmoo_cogserver) | [![CircleCI](https://circleci.com/gh/singnet/logicmoo_cogserver.svg?style=svg)](https://circleci.com/gh/singnet/logicmoo_cogserver)
+
+The Logicmoo Cogserver is a network scheme/prolog command-line
 and logicmoo server for the [OpenCog framework](https://opencog.org).
 
-Overview
---------
-The logicmoo_cogserver provides a network command-line console server and
-a logicmoo narrative server.  The network console server provides a fast,
-efficient telnet interface, giving access to Scheme (guile) and
-Prolog command-lines.  Both can be used by multiple users at the
-same time, all obtaining access to the *same* AtomSpace.  This
-is very useful for running ad-hoc commands, monitoring status,
-poking around and performing general maintenance on long-running
-OpenCog or AtomSpace processes (e.g. robot control, large
-batch-logicmoo processing or long-running data-mining servers.)
+The code in this git repo allows an AtomSpace to communicate with
+other AtomSpaces by having them all connect to a common CogServer.
+The CogServer itself also provides an AtomSpace, which all clients
+interact with, in common.  In ASCII-art:
+```
+ +-------------+
+ |  CogServer  |
+ |    with     |  <-----internet------> Remote AtomSpace A
+ |  AtomSpace  |  <---+
+ +-------------+      |
+                      +-- internet ---> Remote AtomSpace B
 
-Having a network command line is notable: by default, Prolog
-does not allow multiple users to access it at the same time.
-As to scheme/guile, there is an ice-9 REPL server
+```
 
-The Logicmoo CogServer provides not only a convenient interface for ad-hoc
-data hacking, but also provides a very good (and easy, and strong)
-way of doing bulk data transfers. In particular, the transfer of
-multiple megabytes of Atoms and (Truth)Values as UTF-8
-(i.e. human-readable) text is easy and efficient. In particular,
-it does not require fiddling with complex binary formats or
-protocols or the use of protocol libraries or API's. (We're looking
-at you, HTTP, REST, ZeroMQ, ProtoBuff and friends. You are all
-very sophisticated, yes, but are hard to use. And sometimes painfully
-slow.)
+Here, AtomSpace A can load/store Atoms (and Values) to the CogServer,
+as can AtomSpace B, and so these two can share AtomSpace contents
+however desired.
 
-The logicmoo narative server is an
-experimental prototype for controlling multiple threads and assigning
-naratives processing priorities, in an AtomSpace-aware fashion. It is in
-need of the caring love and attention from an interested developer.
+This provides a simple, straight-forward backend for networking
+together multiple AtomSpaces so that they can share data. This
+backend, together with the file-based (RocksDB-based) backend
+at [atomspace-rocks](https://github.com/opencog/atomspace-rocks)
+is meant to provide a building-block out of which more complex
+distributed and/or decentralized AtomSpaces can be built.
 
-For more info, please consult the
-[logicmoo_cogserver wiki page](https://wiki.opencog.org/w/logicmoo_cogserver).
+This really is decentralized: you can talk to multiple servers at once.
+There is no particular limit, other than that of bandwidth,
+response-time, etc.  In ASCII-art:
+
+```
+ +-----------+
+ |           |  <---internet--> My AtomSpace
+ |  Server A |                      ^  ^
+ |           |        +-------------+  |
+ +-----------+        v                v
+                 +----------+   +-----------+
+                 |          |   |           |
+                 | Server B |   |  Server C |
+                 |          |   |           |
+                 +----------+   +-----------+
+```
+
 
 Using
 -----
@@ -120,3 +132,4 @@ See also these README's:
 ## licensing information
 
 This package, like the most of OpenCog packages, is licensed under [AGPL-3.0 license](LICENSE).
+
