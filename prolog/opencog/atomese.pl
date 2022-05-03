@@ -94,8 +94,8 @@ s_prolog('Concept',N,N).
 %s_prolog(T,N,F):- atomic_list_concat([N,T],'_',F).
 
 s_to_atomese1(I,O):- \+ compound(I),!,I=O.
-s_to_atomese1('Evaluation'(Pred,List),(O)):- compound(List),compound_name_arguments(List,'List',Args),atom(Pred), O=..[Pred|Args].
-s_to_atomese1('Evaluation'(Pred,List),(O)):- atom(Pred), O=..[Pred,List].
+s_to_atomese1('Evaluation'(Pred,List),O):- compound(List),compound_name_arguments(List,'List',Args),atom(Pred), O=..[Pred|Args].
+s_to_atomese1('Evaluation'(Pred,List),O):- atom(Pred), O=..[Pred,List].
 s_to_atomese1([T,Name],F):- atom(T),into_name(Name,N),s_prolog(T,N,F),!.
 s_to_atomese1(I,O):- \+ is_list(I),
   compound_name_arguments(I, F, ARGS), 

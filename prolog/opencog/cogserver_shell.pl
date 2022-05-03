@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-:- module(cogserver_shell, [start_cogserver/0,run_cogshell/0]).
+:- module(cogserver_shell, [start_cogserver/0,start_cogserver/1,run_cogshell/0,oc_shell/0]).
 
 :- reexport(library(opencog/atomspace)).
 
@@ -158,16 +158,25 @@ start_cogserver(Port):- started_cogshell_telnet(Port),!,threads.
 start_cogserver(Port):- port_busy_ocs(Port),!, NewPort is Port+100, start_cogserver(NewPort).
 start_cogserver(Port):-      
       asserta(started_cogshell_telnet(Port)),
-      start_cogserver(run_cogshell , Port  , "CogServerShell").
+      start_cogserver(run_cogshell_pl , Port  , "CogServerShell").
 
-%run_cogshell:- current_predicate(guile/0),!,guile.
-%run_cogshell:- current_predicate(lisp/0),!,lisp.
+run_cogshell:- current_predicate(oc_shell/0),!,call(oc_shell).
+run_cogshell:- current_predicate(guile/0),!,guile.
+run_cogshell:- current_predicate(lisp/0),!,lisp.
 run_cogshell:- 
   writeln(';; LABS development version dropping you to prolog/0 shell'),
   prolog.
 
+oc_shell:- 
+  repeat,
+  must_det(f_read("opencog>",X)),
+  X==end_of_file -> true;
+  (must_det(f_eval(X,Y)),
+   must_det(f_print(Y,_)),
+   fail).
+
 start_cogserver:-
-   Port is 17001+4000,
+   Port is 17001,
    start_cogserver(Port),!.
 
 start_cogserver_main:- start_cogserver, prolog.

@@ -38,3 +38,4 @@
 
 % This replicates Eric Mullers DEC reasoner from logicmoo (for OpenCog).
 
+:- start_cogserver(5000).
