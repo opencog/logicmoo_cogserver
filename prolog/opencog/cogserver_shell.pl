@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-:- module(cogserver_shell, [start_cogserver/0,start_cogserver/1,run_cogshell/0,oc_shell/0]).
+:- module(cogserver_shell, [start_cogserver/0,start_cogserver/1,run_cogshell/0,oc_shell/0,start_cogserver_main/0]).
 
 :- reexport(library(opencog/atomspace)).
 
