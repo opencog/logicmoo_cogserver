@@ -225,7 +225,7 @@ oc_shell(Type):-
   carelessly1(write(Out,Prompt)),fco,
   set_stream(In,tty(true)),
   cogshell_read_s(Type,In,X),ocd(read(X)),  
-  (X==end_of_file -> (ocd("Exiting shell "=Type),writeLN('Exiting the shell')); (eval_and_print(Type,X), fail)).
+  (X==end_of_file -> (ocd("Exiting shell "=Type),nop(writeLN('Exiting the shell'))); (eval_and_print(Type,X), fail)).
 
 white_code(32). white_code(10). white_code(13).
 %cogshell_read_s(_Type,In,X):- at_end_of_stream(In),!,X=end_of_file.
@@ -248,7 +248,7 @@ cog_eval(_Type,Const,''):- atom(Const),current_predicate(M:Const/0),!,call(M:Con
 cog_eval(_Type,'STRING'(S),S):-!.
 cog_eval(_Type,Const,Const):- atom(Const),atom_concat('#',_,Const),!.
 cog_eval(Type,X,''):- Type\==scm, 
-  writeLN('Entering scheme shell; use ^D or a single . on a line by itself to exit.'),
+  nop(writeLN('Entering scheme shell; use ^D or a single . on a line by itself to exit.')),
   eval_and_print(scm,X),scm.
 cog_eval(Type,X,Y):- is_special_eval(Type,X,Y),!.
 cog_eval(Type,X,Y):- 
