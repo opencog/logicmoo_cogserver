@@ -23,8 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-:- module(cogserver_shell, [start_cogserver/0,start_cogserver/1,run_cogshell/0,oc_shell/0,start_cogserver_main/0]).
+:- module(cogserver_shell, [start_cogserver/0,start_cogserver/1,run_cogshell/0,oc_shell/0,oc_shell/1,start_cogserver_main/0]).
 
+:- reexport(library(opencog/atomese)).
 :- reexport(library(opencog/atomspace)).
 
 :- ensure_loaded(library(logicmoo_cogserver)).
@@ -58,7 +59,7 @@ peer_to_host(Peer,Host):- atom(Peer),Peer=Host,!.
 peer_to_host(Peer,Host):- compound(Peer),catch((Peer=..PeerL,atomic_list_concat(PeerL,'.',Host)),_,fail),!.
 peer_to_host(Peer,Host):- term_to_atom(Peer,Host),!.
 
-set_stream_carelessly(X,Y):- carelessly(set_stream(X,Y)).
+set_stream_carelessly(X,Y):- carelessly1(set_stream(X,Y)).
 
 cogserver_loop(ServerSocket, Options) :-
     tcp_accept(ServerSocket, PeerSock, Peer),
@@ -81,44 +82,49 @@ cogserver_loop(ServerSocket, Options) :-
 
 
 call_service_cogshell_peer(Host, Alias, PeerSock, In, Out, Peer, Options):-
+  mmake,
   call(call,service_cogshell_peer(Host, Alias, PeerSock, In, Out, Peer, Options)).
+
 
 service_cogshell_peer(Host,Alias,PeerSock,In,Out,Peer,Options) :-
     stream_property(Main_error, file_no(2)),
     option(allow(PeerAllow),Options,ip(127,0,0,1))-> PeerAllow=Peer,
     !,
+    ((
     thread_self(Id),
-    set_prolog_flag(tty_control, true),
-    set_prolog_IO(In, Out, Out),    
-    %set_stream_carelessly(user_input, tty(true)),
+    set_prolog_flag(tty_control, true),    
+    set_stream(In, tty(true)),
+    set_stream(Out, tty(true)),
     % TODO figure out how to get immedate results
-    % set_stream_carelessly(In, buffer_size(1)),
-    set_stream_carelessly(user_output, tty(true)),
-    set_stream_carelessly(user_error, tty(true)),
-    set_stream_carelessly(user_input, close_on_abort(false)),
-    set_stream_carelessly(user_output, close_on_abort(false)),
-    set_stream_carelessly(user_input, close_on_except(true)),
-    set_stream_carelessly(user_output, close_on_except(true)),
-    set_thread_error_stream(Id,user_error),
+    %set_stream_carelessly(In, buffer_size(1)),
+    %set_stream_carelessly(In, buffered(true)),
+    set_stream_carelessly(In, close_on_abort(false)),
+    set_stream_carelessly(Out, close_on_abort(false)),
+    set_stream_carelessly(In, close_on_exec(false)),
+    set_stream_carelessly(Out, close_on_exec(false)),
+    set_stream_carelessly(In, eof_action(eof_code)),
+    set_stream_carelessly(In, write_errors(ignore)),
+    set_stream_carelessly(Out, write_errors(ignore)), 
+    set_stream_carelessly(In, alias(cog_input)),
+    set_stream_carelessly(Out, alias(cog_output)),
+    set_thread_error_stream(Id,Main_error),
     current_prolog_flag(encoding, Enc),
-    set_stream_carelessly(user_input, encoding(Enc)),
-    set_stream_carelessly(user_output, encoding(Enc)),
-    set_stream_carelessly(user_error, encoding(Enc)),
-    set_stream_carelessly(user_input, newline(detect)),
-    set_stream_carelessly(user_output, newline(dos)),
-    set_stream_carelessly(user_error, newline(dos)),
+    set_stream_carelessly(In, encoding(Enc)),
+    set_stream_carelessly(Out, encoding(Enc)),
+    set_stream_carelessly(In, newline(detect)),
+    set_stream_carelessly(Out, newline(dos)),
     call(retractall,thread_util:has_console(Id, _, _, _)),
     thread_at_exit(call(retractall,thread_util:has_console(Id, _, _, _))),
     call(asserta,thread_util:has_console(Id, In, Out, Out)),
     option(call(Call), Options, prolog),
     format(Main_error,'~N~n~q~n~n',[service_cogshell_peer_call(Call,Id,Alias,PeerSock,In,Out,Host,Peer,Options)]),
-    format(user_error,
+    format(Main_error,
            'LogicMOO CogServerShell (~q) on thread ~w~n~n',
-           [Call,Id]),
+           [Call,Id]),    
     call_cleanup(Call,
                  ( close(In),
                    close(Out),
-                   thread_detach(Id))).
+                   thread_detach(Id))))).
 
 service_cogshell_peer(Host,Alias,PeerSock,In,Out,Peer,Options):-
     thread_self(Id),option(call(Call), Options, prolog),
@@ -158,22 +164,126 @@ start_cogserver(Port):- started_cogshell_telnet(Port),!,threads.
 start_cogserver(Port):- port_busy_ocs(Port),!, NewPort is Port+100, start_cogserver(NewPort).
 start_cogserver(Port):-      
       asserta(started_cogshell_telnet(Port)),
-      start_cogserver(run_cogshell_pl , Port  , "CogServerShell").
+      start_cogserver(run_cogshell , Port  , "CogServerShell").
 
 run_cogshell:- current_predicate(oc_shell/0),!,call(oc_shell).
-run_cogshell:- current_predicate(guile/0),!,guile.
-run_cogshell:- current_predicate(lisp/0),!,lisp.
+%run_cogshell:- current_predicate(guile/0),!,guile.
+%run_cogshell:- current_predicate(lisp/0),!,lisp.
 run_cogshell:- 
+  my_ioe(In,Out,Main_error),
+  set_prolog_IO(In, Out, Main_error), 
+  set_stream_carelessly(Out,alias(cog_output)),
   writeln(';; LABS development version dropping you to prolog/0 shell'),
   prolog.
 
-oc_shell:- 
+ocd(X):- stream_property(Main_error, file_no(2)), format(Main_error,"~N~q~n",[X]), flush_output(Main_error).
+
+my_ioe(In,Out):- thread_self(Id), thread_util:has_console(Id,In,Out,_Err),!.
+my_ioe(In,Out):- thread_util:has_console(_Id,In,Out,_Err),!.
+my_ioe(In,Out):- stream_property(Out,alias(cog_output)),stream_property(In,cog_input),!.
+my_ioe(In,Out):- current_input(In),current_output(Out).
+my_ioe(In,Out,Main_error):- my_ioe(In,Out), stream_property(Main_error, file_no(2)),!.
+
+
+carelessly1(X):- ignore(catch(X,E,ocd(X->E))).
+
+fco:- catch(flush_output(user_error),_,true),catch(flush_output(cog_output),_,true).
+debug_read_rest:-
+  my_ioe(In,Out,Main_error),
+  writeln(Out,''),
   repeat,
-  must_det(f_read("opencog>",X)),
-  X==end_of_file -> true;
-  (must_det(f_eval(X,Y)),
-   must_det(f_print(Y,_)),
-   fail).
+  get_code(In,Code),my_char_code(Char,Code),
+  writeln(Main_error,my_char_code(Char,Code)),
+  (Code == -1 -> true ; fail).
+
+my_char_code(Char,Code):- catch(char_code(Char,Code),_,fail),!.
+my_char_code(end_of_file,-1).
+
+prompt_for(opencog,"opencog> ").
+prompt_for(sexpr,"").
+prompt_for(scm,"guile> ").
+prompt_for(prolog,"?- ").
+prompt_for(_,"").
+
+oc_shell:- 
+  mmake,
+  set_prolog_flag(color_term,true),
+  my_ioe(In,Out,Main_error),
+  set_stream(In,tty(true)),
+  set_stream(Out,alias(cog_output)),
+  stream_property(Main_output,file_no(1)),
+  set_prolog_IO(In, Main_output, Main_error),
+  oc_shell(opencog),!.
+
+w_no_p(G):- setup_call_cleanup(prompt(Old,''),G,prompt(_,Old)).
+
+oc_shell(Type):- 
+  repeat,
+  my_ioe(In,Out),
+  once(prompt_for(Type,Prompt)),
+  ocd(prompt_for(Type,Prompt)),
+  carelessly1(write(Out,Prompt)),fco,
+  set_stream(In,tty(true)),
+  cogshell_read_s(Type,In,X),ocd(read(X)),  
+  (X==end_of_file -> (ocd("Exiting shell "=Type),writeLN('Exiting the shell')); (eval_and_print(Type,X), fail)).
+
+white_code(32). white_code(10). white_code(13).
+%cogshell_read_s(_Type,In,X):- at_end_of_stream(In),!,X=end_of_file.
+cogshell_read_s(_Type,In,X):- peek_code(In,-1),get_code(In,_),!,X=end_of_file.
+cogshell_read_s( Type,In,X):- peek_code(In,W),white_code(W),get_code(In,_),!,cogshell_read_s(Type,In,X).
+cogshell_read_s(_Type,In,X):- peek_string(In,2, ".\r"),get_code(In,_),get_code(In,_),!,X=end_of_file.
+cogshell_read_s(Type,In,Y):- % set_stream_carelessly(In,buffer_size(4096)),
+   w_no_p(carelessly1(lisp_read(In,X))),translate_read(Type,X,Y),fco.
+
+translate_read(_,'.',end_of_file).
+translate_read(_,X,X).
+
+sexpr:- oc_shell(sexpr).
+scm:- oc_shell(scm).
+
+eval_and_print(Type,X):- once(cog_eval(Type,X,Y)),ocd(eval(X->Y)), carelessly1(cog_print(Y)), fco.
+
+cog_eval(Type,Const,Out):- atom(Const),atom_concat(New,'.',Const),!,cog_eval(Type,New,Out).
+cog_eval(_Type,Const,''):- atom(Const),current_predicate(M:Const/0),!,call(M:Const).
+cog_eval(_Type,'STRING'(S),S):-!.
+cog_eval(_Type,Const,Const):- atom(Const),atom_concat('#',_,Const),!.
+cog_eval(Type,X,''):- Type\==scm, 
+  writeLN('Entering scheme shell; use ^D or a single . on a line by itself to exit.'),
+  eval_and_print(scm,X),scm.
+cog_eval(Type,X,Y):- is_special_eval(Type,X,Y),!.
+cog_eval(Type,X,Y):- 
+   catch(f_eval(X,Y),E,(fail,ocd(eval(X,Y)=E),!,Y=[error,E,in,X])),
+   ocd(eval_to(Type,Y)),!.
+cog_eval(_,X,Y):- 
+   atomese_to_s(X,Y),!,
+   ocd(atomese_to_s(X,Y)),
+   oc_assert(Y),!.
+cog_eval(_Type,_,'#f').   
+
+is_special_eval(scm,['use-modules'|_],'').
+is_special_eval(scm,['cog-get-all-roots'|_],''):- 
+   writeL('('),forall(oc_as(P),cog_print(P)),writeLN(')').
+is_special_eval(scm,['cog-get-atoms',[quote,_],'#t'],''):- writeLN('( (List (Concept "a")(Concept "b")) )').
+is_special_eval(scm,['cog-keys->alist'|_],''):- writeL('(
+  ((PredicateNode "flo") . (FloatValue 1 2 3) ) 
+  ((PredicateNode "blo") . (FloatValue 4 5 6) ))').
+
+
+
+
+oc_assert(X):- assert_if_new(oc_as(X)).
+to_cog_client(G):- with_output_to(cog_output,G).
+writeL(X):- compound(X),!,cog_print(X).
+writeL(X):- carelessly1(write(cog_output,X)),!.
+writeLN(X):- writeL(X),fco,carelessly1(format(cog_output,'~N',[])),fco.
+
+cog_print(Var):- var(Var), !, cog_print(var(Var)).
+cog_print('#t'):- writeLN('#t'),!.
+cog_print('#f'):- writeLN('#f'),!.
+cog_print(''):- writeLN(''),!.
+cog_print(Y):-
+   catch(to_cog_client(f_print(Y,[],_)),E,(ocd(f_print(Y)=E),fail)),!.
+cog_print(_):- writeLN('#f').
 
 start_cogserver:-
    Port is 17001,

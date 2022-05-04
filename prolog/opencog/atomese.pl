@@ -21,7 +21,7 @@
  * Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
- :- module(cogserver_atomese, [read_atomese/2,read_atomese/1,run_opencog_example_tests/0]).
+ :- module(cogserver_atomese, [read_atomese/2,read_atomese/1,run_opencog_example_tests/0,s_to_atomese/2,atomese_to_s/2]).
 
 
 % read_atomese(X):- read(X).
@@ -77,7 +77,27 @@ s_to_atomese0(A,O):- atom_concat(C,'Link',A),atom_length(C,L),L>1,!,s_to_atomese
 %s_to_atomese0('EvaluationLink','Evaluation').
 s_to_atomese0(A,A).
 
+atomese_to_s(V,V):- var(V),!.
+atomese_to_s([A|AA],[S|SS]):- atomese_to_s0(A,S), maplist(atomese_to_s,AA,SS).
+atomese_to_s(V,V).
 
+atomese_to_s0(V,V):- var(V),!.
+atomese_to_s0([A|AA],SS):- !, maplist(atomese_to_s,[A|AA],SS).
+atomese_to_s0(A,A):- atom_concat(_,'Node',A),!.
+atomese_to_s0(A,A):- atom_concat(_,'Link',A),!.
+atomese_to_s0(List,ListLink):- is_link_base(List),!,atom_concat(List,'Link',ListLink).
+atomese_to_s0(List,ListLink):- is_node_base(List),!,atom_concat(List,'Node',ListLink).
+atomese_to_s0(X,X).
+
+is_node_base('Concept').
+is_node_base(LB):- is_link_base(LB),!,fail.
+is_node_base(LB):- is_capped(LB).
+
+is_link_base('Evaluation').
+is_link_base('List').
+is_link_base('Set').
+
+is_capped(LB):- name(LB,[R,E|_]),code_type(R,upper),code_type(E,lower).
 
 
 s_prolog(A,N,O):- atom_concat(C,'Node',A),!,s_prolog(C,N,O).
