@@ -1,29 +1,50 @@
+;#!/usr/local/bin/guile -l 
+
 (use-modules (opencog) 
   (opencog python) (opencog exec) (opencog persist) 
   (opencog cogserver) (opencog persist-cog))
 (use-modules (ice-9 threads))
+(use-modules (opencog persist-cog-simple))
+
+;(start-cogserver "cogserver-slave.conf")
+
+; Talk to the two machines in two different ways.
+; The CogSimpleStorageNode uses the simple, single-threaded
+; serialized communications channel; the CogStorageNode uses
+; the parallelized, asynchronous channel.
+
+;(define master (CogStorageNode "cog://localhost:17001"))
+;(define slave (CogStorageNode "cog://localhost:17101"))
+
+; Open the channel to each; by default, storage nodes are created
+; with closed channels. This allows storage nodes to be created,
+; when the remote end is not actually available, yet.
+; (cog-open master)
+;(cog-open slave)
 
 ; Logicmoo Public IP
-; (cogserver-open "cog://metaverse.1ogicmoo.org/")
-(cogserver-open "cog://10.0.0.233:17001/")
-; (start-cogserver)
+;(cogserver-open "cog://metaverse.1ogicmoo.org/")
+;(cogserver-open "cog://10.0.0.233:17001/")
+;(cogserver-open "cog://10.0.0.233:17101/")
 
+;(Concept "bar" (stv 0.1111 0.87777))
+;(List (Concept "A") (Concept "B"))
+;(Set (Concept "A") (Concept "B"))
+;(Set (Concept "A") (Concept "B") (Concept "C"))
+;(Evaluation (Predicate "foo") (List (Concept "B") (Concept "C") (Concept "oh boy!")))
+;(Concept "b" (stv 0.9 0.2))
 
-; pull from 1ogicmoo remote server
-(load-atomspace)
-
-(Concept "bar" (stv 0.1111 0.87777))
-(List (Concept "A") (Concept "B"))
-(Set (Concept "A") (Concept "B"))
-(Set (Concept "A") (Concept "B") (Concept "C"))
-(Evaluation (Predicate "foo")
-	(List (Concept "B") (Concept "C") (Concept "oh boy!")))
 
 ; Push atomspace out to the remote 1ogicmoo server.
-(store-atomspace)
+;(store-atomspace slave)
+;(store-atomspace master)
 
+; pull from logicmoo remote server
+;(load-atomspace master)
 
-;;(call-with-new-thread (lambda () 
+(load "exam.scm")
+
+;(call-with-new-thread (lambda () 
 (python-eval "
 from opencog.web.api.apimain import RESTAPI
 from opencog.atomspace import AtomSpace, types
@@ -42,12 +63,6 @@ api = RESTAPI(atomspace)
 api.run(host=IP_ADDRESS, port=PORT)
 
 ")
-;;))
-
-; NOTE: If you want to get your guile shell then modify the above as follows
-; (use-modules (ice-9 threads))
-; (use-modules (opencog) (opencog python))
-;
-; (call-with-new-thread (lambda ()(python-eval "same as above")))
+;))
 
 

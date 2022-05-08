@@ -65,11 +65,10 @@ s_to_atomese0('$STRING'(I),O):- !, any_to_string(I,O).
 s_to_atomese0([F|List],[stv,X,Y,O]):- select([stv,X,Y],List,NewList),maplist(s_to_atomese0,[F|NewList],O).
 s_to_atomese0([F|List],[stv,X,Y,O]):- select(['SimpleTruthValue',X,Y],List,NewList),maplist(s_to_atomese0,[F|NewList],O).
 s_to_atomese0(I,O):- is_list(I),maplist(s_to_atomese0,I,O),!.
-s_to_atomese0(I,O):- compound(I),!,
+s_to_atomese0(I,O):- compound(I),
   compound_name_arguments(I, F, ARGS), 
-  s_to_atomese0(F,FF),
   maplist(s_to_atomese0, ARGS, ArgsO), 
-  compound_name_arguments(O, FF, ArgsO),!.
+  compound_name_arguments(O, F, ArgsO),!.
 s_to_atomese0(I,O):- \+ atom(I), I=O.
 %s_to_atomese0(A,O):- atom_concat(C,'Link',A),!,s_to_atomese0(C,O).
 s_to_atomese0(A,O):- atom_concat(C,'Node',A),!,s_to_atomese0(C,O).
@@ -77,7 +76,22 @@ s_to_atomese0(A,O):- atom_concat(C,'Link',A),atom_length(C,L),L>1,!,s_to_atomese
 %s_to_atomese0('EvaluationLink','Evaluation').
 s_to_atomese0(A,A).
 
+s_to_atomese1(I,O):- \+ compound(I),!,I=O.
+s_to_atomese1('Evaluation'(Pred,List),O):- compound(List),compound_name_arguments(List,'List',Args),atom(Pred), O=..[Pred|Args].
+s_to_atomese1('Evaluation'(Pred,List),O):- atom(Pred), O=..[Pred,List].
+s_to_atomese1([T,Name],F):- atom(T),into_name(Name,N),s_prolog(T,N,F),!.
+s_to_atomese1(I,O):- \+ is_list(I),
+  compound_name_arguments(I, F, ARGS), 
+  maplist(s_to_atomese1, ARGS, ArgsO), 
+  compound_name_arguments(O, F, ArgsO),!.
+s_to_atomese1(I,O):- \+ is_list(I),I=O,!.
+s_to_atomese1([F|I],O):- atom(F), pify(F), maplist(s_to_atomese1,I,M),O=..[F|M],!.
+s_to_atomese1(I,O):- maplist(s_to_atomese1,I,O),!.
+s_to_atomese1(O,O).
+
+
 atomese_to_s(V,V):- var(V),!.
+atomese_to_s(V,['ConceptNode','$STRING'(S)]):- atom(V),!,atom_string(V,S).
 atomese_to_s([A|AA],[S|SS]):- atomese_to_s0(A,S), maplist(atomese_to_s,AA,SS).
 atomese_to_s(V,V).
 
@@ -113,18 +127,6 @@ s_prolog('Concept',N,N).
 %s_prolog(T,N,F):- atomic_list_concat([N,T],'_',F).
 %s_prolog(T,N,F):- atomic_list_concat([N,T],'_',F).
 
-s_to_atomese1(I,O):- \+ compound(I),!,I=O.
-s_to_atomese1('Evaluation'(Pred,List),O):- compound(List),compound_name_arguments(List,'List',Args),atom(Pred), O=..[Pred|Args].
-s_to_atomese1('Evaluation'(Pred,List),O):- atom(Pred), O=..[Pred,List].
-s_to_atomese1([T,Name],F):- atom(T),into_name(Name,N),s_prolog(T,N,F),!.
-s_to_atomese1(I,O):- \+ is_list(I),
-  compound_name_arguments(I, F, ARGS), 
-  maplist(s_to_atomese1, ARGS, ArgsO), 
-  compound_name_arguments(O, F, ArgsO),!.
-s_to_atomese1(I,O):- \+ is_list(I),I=O,!.
-s_to_atomese1([F|I],O):- atom(F), pify(F), maplist(s_to_atomese1,I,M),O=..[F|M],!.
-s_to_atomese1(I,O):- maplist(s_to_atomese1,I,O),!.
-s_to_atomese1(O,O).
 
 pify(stv).
 pify(F):- \+ downcase_atom(F,F).

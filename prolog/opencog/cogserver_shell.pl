@@ -250,7 +250,7 @@ cog_eval(_Type,Const,Const):- atom(Const),atom_concat('#',_,Const),!.
 cog_eval(Type,X,''):- Type\==scm, 
   nop(writeLN('Entering scheme shell; use ^D or a single . on a line by itself to exit.')),
   eval_and_print(scm,X),scm.
-cog_eval(Type,X,Y):- is_special_eval(Type,X,Y),!.
+cog_eval(_Type,X,Y):- is_special_eval(X,Y),!.
 cog_eval(Type,X,Y):- 
    catch(f_eval(X,Y),E,(fail,ocd(eval(X,Y)=E),!,Y=[error,E,in,X])),
    ocd(eval_to(Type,Y)),!.
@@ -260,27 +260,66 @@ cog_eval(_,X,Y):-
    oc_assert(Y),!.
 cog_eval(_Type,_,'#f').   
 
-is_special_eval(scm,['use-modules'|_],'').
-is_special_eval(scm,['cog-get-all-roots'|_],''):- 
-   writeL('('),forall(oc_as(P),cog_print(P)),writeLN(')').
-is_special_eval(scm,['cog-get-atoms',[quote,_],'#t'],''):- writeLN('( (List (Concept "a")(Concept "b")) )').
-is_special_eval(scm,['cog-keys->alist'|_],''):- writeL('(
+eval_arg(Var,Var):- \+ compound(Var).
+eval_arg([quote,Q],Q):-!.
+eval_arg([F|List],Out):- maplist(eval_arg,List,ListO), List\=@=ListO,!,eval_arg([F|ListO],Out).
+eval_arg(['cog-new-node'|ARGS],Out):- eval_arg(ARGS,Out).
+eval_arg(['cog-new-value'|ARGS],Out):- eval_arg(ARGS,Out).
+eval_arg(['cog-new-stv'|Rest],[stv|Rest]).
+eval_arg(['define',X,Y],''):- assert_value(X,Y).
+eval_arg(X,Y):- oc_value(X,Y),!.
+eval_arg(X,X).
+
+oc_value(X,Y):- oc_as(X,sval,Y).
+assert_value(X,Y):- retractall(oc_as(X,sval,_)),asserta(oc_as(X,sval,Y)).
+
+is_special_eval('','').
+is_special_eval(In,Out):- eval_arg(In,Mid),In\=@=Mid,eval_arg(Mid,Out).
+is_special_eval(['use-modules'|_],'').
+is_special_eval(['cog-delete',X],TF):- !, as_tf(oc_retract(X),TF).
+is_special_eval(['cog-delete-recursive',X],TF):- !,as_tf(forall((oc_as_alist(A,B),contains_atom([A|B],X)),retract_alist(A,B)),TF).
+is_special_eval(['cog-set-tv!',Atom,TVal],[]):- oc_assert(oc_as(Atom,TVal)).
+is_special_eval(['cog-arity',X],A):- cog_arity(X,A).
+is_special_eval(['cog-get-all-roots'|_],''):- 
+   writeL('('),
+   forall(oc_as_alist(A,B),cog_print([A|B])),
+   writeLN(')').
+is_special_eval(['cog-get-atoms',[quote,_],'#t'],''):- writeLN('( (List (Concept "a")(Concept "b")) )').
+is_special_eval(['cog-keys->alist'|_],''):- writeL('(
   ((PredicateNode "flo") . (FloatValue 1 2 3) ) 
   ((PredicateNode "blo") . (FloatValue 4 5 6) ))').
 
+as_tf(G,TF):- call(G)->TF='#t';TF='#f'.
+
+cog_arity(X,A):- s_to_atomspace(X,L),length(L,A).
 
 
+contains_atom([A|B],X):- sub_term(E,[A|B]),compound(E),E=X.
+retract_alist(P,V):- retractall(oc_as(P,V)).
+oc_as_alist(P,V):- oc_as(P,V).
 
-oc_assert(X):- assert_if_new(oc_as(X)).
+:- dynamic(oc_as/2).
+:- dynamic(oc_as/3).
+
+
+oc_assert(oc_as(X,Y)):- !, assert_if_new(oc_as(X,Y)).
+oc_assert(oc_as(X,Y,Z)):- !, assert_if_new(oc_as(X,Y,Z)).
+oc_assert(X):- assert_if_new(oc_as(X,[])).
+
+oc_retract(oc_as(X,Y)):- !, retract(oc_as(X,Y)).
+oc_retract(oc_as(X,Y,Z)):- !, retract(oc_as(X,Y,Z)).
+oc_retract(X):- retract(oc_as(X,_)).
+
+
 to_cog_client(G):- with_output_to(cog_output,G).
-writeL(X):- compound(X),!,cog_print(X).
+writeL(X):- \+atomic(X),!,cog_print(X).
 writeL(X):- carelessly1(write(cog_output,X)),!.
 writeLN(X):- writeL(X),fco,carelessly1(format(cog_output,'~N',[])),fco.
 
 cog_print(Var):- var(Var), !, cog_print(var(Var)).
 cog_print('#t'):- writeLN('#t'),!.
 cog_print('#f'):- writeLN('#f'),!.
-cog_print(''):- writeLN(''),!.
+cog_print(''):- nop(writeLN('')),!.
 cog_print(Y):-
    catch(to_cog_client(f_print(Y,[],_)),E,(ocd(f_print(Y)=E),fail)),!.
 cog_print(_):- writeLN('#f').
